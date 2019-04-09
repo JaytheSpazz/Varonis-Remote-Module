@@ -1,4 +1,4 @@
-﻿function Connect-Varonis{
+function Connect-Varonis{
         <#
             .SYNOPSIS
 
@@ -410,91 +410,6 @@ function Enable-RDPVaronisJob{
     }
     
 }
-<#
-function Set-VaronisIRPStackSize{
-    PARAM(
-        [parameter(Mandatory=$True,ParameterSetName="Computer",Position=0)]
-        [STRING]$Computer
-        )
-    $computers = Get-Content $computer
-
-    foreach($computer in $computers){
-        $session = New-PSSession -ComputerName $computer
-        Invoke-Command -Session $session {
-            $regpath = "HKLM:\System\CurrentControlSet\Services\LanmanServer\Parameters"
-            if(test-path -Path $regpath){
-                if(test-path -Path C:\regBkUpIRP.reg){
-                    Write-Host -ForegroundColor yellow "Overwriting file..."
-                     Reg export "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters" C:\regBkUpIRP.reg /y
-                     Write-Host -ForegroundColor Green "Registry back up file has been created for $($env:computername)"
-                     
-                 }
-                 else{
-                     Reg export "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters" C:\regBkUpIRP.reg
-                     Write-Host -ForegroundColor Green "Registry back up file has been created for $($env:computername)"
-                 } 
-            }
-            else{
-                Write-Host -ForegroundColor Yellow "Creating Registry path...."
-                New-Item $regpath -Force
-                if(test-path -Path C:\regBkUpIRP.reg){
-                    Write-Host -ForegroundColor yellow "Overwriting file..."
-                    Reg export "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters" C:\regBkUpIRP.reg /y
-                    Write-Host -ForegroundColor Green "Registry back up file has been created for $($env:computername)"
-                }
-                else{
-                    Reg export "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters" C:\regBkUpIRP.reg
-                    Write-Host -ForegroundColor Green "Registry back up file has been created for $($env:computername)"
-                }
-            }
-        }
-        Remove-PSSession -Session $session
-        Write-Host -ForegroundColor Yellow "Setting IRPStackSize for Varonis Agents on $computer"
-        Set-IRPStackSize -computer $computer
-        $reply = Read-Host -Prompt "Restart is required for the registry changes to be applied. Would you like to restart $computer now?[y/n]"
-        if ( $reply -match "[yY]" ) { 
-            Write-Host "Restarting $Computer..." -ForegroundColor Yellow
-            Restart-Computer -ComputerName $Computer -Force -Wait -For WinRM
-            Write-Host "Restarting $Computer completed"
-        }
-    }
-}
-
-function Set-IRPStackSize {
-    PARAM(
-        [parameter(Mandatory=$True,ParameterSetName="Computer",Position=0)]
-        [STRING]$Computer
-        )
- 
-        $RegQueryResult = @()
-        $IRPNotFound = @()
-        $LoggedOnUsers = [ordered] @{}
-        $ADUsers = [ordered] @{}
-        $IRPStackSizePath = "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters\IRPStackSize"
-        $Data = @($Computer) | ConvertFrom-Csv -Header Hostname -Verbose
-        Foreach ($Server in ($Data.Hostname | Select -Unique))
-        {
-            $TempError = $NULL
-            $TempResult = $NULL
-            $TempServerName = $NULL
-            $TempServerName = [string]::Concat($Server,".FEDERATED.FDS");
-            #$Server;
-            #$TempServerName;
-            $TempCMDLine = [string]::Concat("Reg Query  \\",$TempServerName,"\HKLM\System\CurrentControlSet\Services\lanmanserver\parameters /v IRPStackSize")
-            $TempCMDLine
-            $TempResult = Invoke-Expression $TempCMDLine -ErrorAction SilentlyContinue -ErrorVariable TempError -WarningAction SilentlyContinue
-            $tempResult
-            If (($TempResult -ne $NULL) -and ($TempResult.Length -gt 2))
-            {
-                $RegQueryResult += @($TempServerName,$TempResult)
-            }
-            Else
-            {
-                $IRPNotFound += $TempServerName
-            }
-        }
-}
-#>
 function Start-VaronisService{
     [CmdletBinding(SupportsShouldProcess=$False,
    ConfirmImpact='Low')]
